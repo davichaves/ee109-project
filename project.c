@@ -116,18 +116,14 @@ int main(void) {
     init_lcd();
     sei(); // Enable interrupts
     writecommand(1); //clear LCD
-    stringout("Eu sou um");
-    moveto(16);
-    stringout("termostato! :)");
-    moveto(32);
-    //write_lcd();
+    write_lcd();
     /* Main programs goes here */
     while (1) {
-        // check_buttons();
-        // check_temp();
-        // if (hasChanged == 1) {
-        //     write_lcd();
-        // }
+        check_buttons();
+        check_temp();
+        if (hasChanged == 1) {
+            write_lcd();
+        }
     } // Loop forever
     return 0;   /* never reached */
 }
