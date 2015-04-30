@@ -11,11 +11,17 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "lcd.h"
+#include "ds1631.h"
 
 void init_ports(void);
 void write_lcd(void);
 void check_buttons(void);
 void check_temp(void);
+void ds1631_init (void);
+void ds1631_conv (void);
+void ds1631_temp (unsigned char *);
+void convert_temp (unsigned char *);
+
 volatile char hasChanged;
 
 int Low = 50;
@@ -112,13 +118,20 @@ ISR(PCINT1_vect) {
 }
 
 int main(void) {
+    unsigned char t[2];
+    ds1631_init(); // Initialize the DS1631
+    ds1631_conv(); // Set the DS1631 to do conversions
     init_ports();
     init_lcd();
     sei(); // Enable interrupts
     writecommand(1); //clear LCD
+    ds1631_temp(t);
+    convert_temp(t);
     write_lcd();
     /* Main programs goes here */
     while (1) {
+        ds1631_temp(t);
+        convert_temp(t);
         check_buttons();
         check_temp();
         if (hasChanged == 1) {
@@ -126,6 +139,21 @@ int main(void) {
         }
     } // Loop forever
     return 0;   /* never reached */
+}
+
+/*
+  convert_temp - convert temp
+*/
+
+void convert_temp (unsigned char* t){
+    unsigned char temperatureInC = 2*t[0];
+    if (t[1] != 0x00){
+        temperatureInC+=1;
+    }
+    int result = 9 * temperatureInC;
+    result = result/10;
+    result+=32;
+    temp = result;
 }
 
 /*
@@ -189,6 +217,7 @@ void init_ports() {
     PCMSK1 |= ((1 << PCINT10)| (1 << PCINT11));
     DDRD |= 0xF0; //setting D4-D7 as outputs
     DDRB |= 0x1B; //seeting B1-B2 as outputs
+    DDRC |= 0x02;
     DDRD &= 0b11110011; //made an input //D2 and D3 -> buttons!
     PORTD |= 0b00001100; //set to zero  //D2 and D3 -> buttons!
     PORTC |= ((1 << PC2) | (1 << PC3)); //A2 and A3 -> Rotary!
